@@ -1,6 +1,6 @@
 const userModel = require("../model/userSchema");
 const emailValidator = require("email-validator")
-
+const bcrypt = require('bcrypt')
 
 // For signup
 
@@ -68,7 +68,7 @@ const signin = async (req, res) => {
     try {
         const user = await userModel.findOne({ email }).select('+password');
 
-        if (!user || user.password !== password) {
+        if (!user || !await bcrypt.compare(password,user.password)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid ID or Password'
@@ -95,9 +95,52 @@ const signin = async (req, res) => {
     }
 }
 
+//getUser method
+
+const getUser = async(req,res,next) =>{
+    const userId = req.user.id;
+
+    try {
+        const user = await userModel.findById(userId);
+        return res.status(200).json({
+            success:true,
+            data:user
+        })
+    } catch (e) {
+        return res.status(400).json({
+            success:false,
+            message: e.message
+        })
+    }
+}
+
+
+// Log out method
+
+const logout = (req,res,next) =>{
+    try {
+        const cookieOption = {
+            expires:new Date(),
+            httpOnly:true
+        };
+        res.cookie('token',null,cookieOption);
+        res.status(200).json({
+            success:true,
+            message:'Logged Out'
+        })
+    } catch (err) {
+        res.status(400).json({
+            success:false,
+            message:err.message
+        })
+    }
+}
+
 
 
 module.exports = {
     register,
-    signin
+    signin,
+    getUser,
+    logout
 }
